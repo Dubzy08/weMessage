@@ -367,7 +367,7 @@
     }
 }
 
-.bubble.server {
+.bubble.other {
     background: transparent;
     border: 1px solid var(--border);
     color: var(--text-secondary);
@@ -412,7 +412,7 @@
     font-family: 'DM Mono', monospace;
 }
 
-.msg-row.server {
+.msg-row.other {
     justify-content: left;
 }
 

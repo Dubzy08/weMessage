@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from "react";
 import './Messenger.css';
 import socket from './socket.js';
 import formatMessage from '../utils/messages.js';
+import { useNavigate } from "react-router-dom";
 const COLORS = ["#e77c5e", "#5b8ef4", "#a85ef4", "#3ecf8e", "#f4b25b", "#f45b8e"];
 
 function AvatarEl({ name, size = 46, colorIdx = 0 }) {
@@ -32,6 +33,9 @@ export default function Messenger() {
   const messagesEndRef = useRef(null);
   const typingTimeout = useRef(null);
 
+  const navigate = useNavigate();
+  const token = localStorage.getItem('token');
+
   useEffect(() => {
     socket.connect();
 
@@ -59,7 +63,12 @@ export default function Messenger() {
     setInput("");
   };
 
-  const outputMessage = (message) =>{
+  useEffect(() => {
+    if(token === "undefined")
+      navigate('/login');
+  }, [token, navigate])
+
+  const outputMessage = (message) => {
     setMessages(
       prev => [...prev, message]
     );
@@ -162,9 +171,9 @@ export default function Messenger() {
                     <div className={`msg-avatar ${!msg.isLast ? "hidden" : ""}`}>
                       <AvatarEl name={active.name} size={28} colorIdx={activeConvo} />
                     </div>
-                  ) : msg.from === "server" ? (
+                  ) : msg.from !== "me" ? (
                     <div className="msg-avatar">
-                      <AvatarEl name="S V" size={28} colorIdx={5} />
+                      <AvatarEl name={msg.from} size={28} colorIdx={5} />
                     </div>
                   ) : null}
                   <div className="msg-element">

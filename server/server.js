@@ -24,24 +24,24 @@ app.use(cors());
 
 createAdminAccount();
 
-let connections = 0;
+const serverName = "Chat Bot"
 
 io.on('connection', socket => {
     socket.emit('message', formatMessage(
-        username="server", 
+        username=serverName, 
         text="Connected to chat"
     ));
 
     // Broadcast when user connects
     socket.broadcast.emit('message', formatMessage(
-        username="server", 
+        username=serverName, 
         text="New user joined"
     ));
 
     // Run when client disconnects
     socket.on('disconnect', () => {
         io.emit('message', formatMessage(
-            username="server", 
+            username=serverName, 
             text="User left the chat"
         ));
     })
