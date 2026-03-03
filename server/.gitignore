@@ -25,3 +25,6 @@ dist-ssr
 
 # REST Requests
 *.rest
+
+# Environment variables
+.env
