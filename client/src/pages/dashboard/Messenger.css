@@ -75,40 +75,6 @@
     color: #e74c3c;
 }
 
-.search-bar {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    background: var(--input-bg);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 10px 14px;
-    transition: border-color 0.2s;
-}
-
-.search-bar:focus-within {
-    border-color: var(--accent);
-}
-
-.search-bar svg {
-    color: var(--text-secondary);
-    flex-shrink: 0;
-}
-
-.search-bar input {
-    background: none;
-    border: none;
-    outline: none;
-    color: var(--text-primary);
-    font-family: inherit;
-    font-size: 14px;
-    width: 100%;
-}
-
-.search-bar input::placeholder {
-    color: var(--text-dim);
-}
-
 .convo-list {
     overflow-y: auto;
     flex: 1;

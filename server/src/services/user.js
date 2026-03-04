@@ -5,4 +5,13 @@ async function getUsers(){
     return users;
 };
 
-module.exports = { getUsers };
+async function searchUsers(query){
+    return await User.find({
+        name: { $regex: query, $options: 'i' }
+    }).select('_id name').limit(10);
+}
+
+module.exports = { 
+    getUsers,
+    searchUsers
+};

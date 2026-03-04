@@ -1,8 +1,10 @@
 import { useState, useRef, useEffect } from "react";
-import './Messenger.css';
+import { useNavigate } from "react-router-dom";
 import socket from './socket.js';
 import formatMessage from '../utils/messages.js';
-import { useNavigate } from "react-router-dom";
+import SearchBar from "./SearchBar.jsx";
+import './Messenger.css';
+
 const COLORS = ["#e77c5e", "#5b8ef4", "#a85ef4", "#3ecf8e", "#f4b25b", "#f45b8e"];
 
 function AvatarEl({ name, size = 46, color = "#0083ae" }) {
@@ -15,30 +17,21 @@ function AvatarEl({ name, size = 46, color = "#0083ae" }) {
   );
 }
 
-const CONVERSATIONS = [
-  { _id: '69a5d8bbbae0fd090c01a6d0', name: "Sofia Laurent", online: true, preview: "Sounds good! See you then 👍", time: "2m", unread: 2, color: COLORS[0] },
-  { _id: '69a5d8d66b18ebc44a008349', name: "James Park", online: true, preview: "Did you see the game last night?", time: "14m", unread: 0, color: COLORS[1] },
-  { _id: '69a5d8dfb8d3f7376199e794', name: "Ari & Friends", online: false, preview: "Maya: lmaooo no way", time: "1h", unread: 5, group: true, color: COLORS[2] },
-  { _id: '69a5d8e67bb8a3443e88332f', name: "Yuki Tanaka", online: false, preview: "Let me know when you're free", time: "3h", unread: 0, color: COLORS[3] },
-  { _id: '69a5d8ec2282c585693fc8de', name: "Dev Team", online: false, preview: "PR is ready for review", time: "Yesterday", unread: 0, group: true, color: COLORS[4] },
-  { _id: '69a5d8f2b09d0c55594d2682', name: "Camille Dubois", online: true, preview: "Thanks! 😊", time: "Mon", unread: 0, color: COLORS[5] },
-];
-
 export default function Messenger() {
   const [conversations, setConversations] = useState([])
-  const [activeConvo, setActiveConvo] = useState(CONVERSATIONS[0]._id);
+  const [activeConvo, setActiveConvo] = useState();
+  const [loading, setLoading] = useState(true);
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [isTyping, setIsTyping] = useState(false);
-  const [search, setSearch] = useState("");
   const [showSettings, setShowSettings] = useState(false);
   const messagesEndRef = useRef(null);
-  const typingTimeout = useRef(null);
 
   const apiUrl = import.meta.env.VITE_WEMESSAGE_API_URL;
   const navigate = useNavigate();
   const token = sessionStorage.getItem('token');
   const activeUser = JSON.parse(sessionStorage.getItem('user'));
+  const previousConvo = useRef(null);
 
   useEffect(() => {
     if (!token || token === "undefined")
@@ -50,18 +43,51 @@ export default function Messenger() {
       try {
         const res = await fetch(`${apiUrl}/messages/conversations/${activeUser.id}`)
         const dbConvos = await res.json();
-        const merged = [...dbConvos, ...CONVERSATIONS];
-        setConversations(merged);
-        setActiveConvo(merged[0]?._id);
+        const namedConvos = dbConvos.map((c, i) => ({
+          ...c,
+          name: c.isGroup 
+            ? c.groupName 
+            : c.participantData?.find(p => p._id !== activeUser.id)?.name || "Unknown",
+          color: COLORS[i % COLORS.length],
+          online: false,
+        }));
+        setConversations(namedConvos);
+        setActiveConvo(namedConvos[0]?._id);
       } catch (error) {
         console.error('Failed to load conversations:', error);
-        setConversations(CONVERSATIONS)
-        setActiveConvo(CONVERSATIONS[0]?._id);
+        setConversations(null)
+        setActiveConvo(null);
+      } finally {
+        setLoading(false);
       }
     };
 
     loadConversations();
   }, [activeUser?.id])
+ 
+  useEffect(() => {
+    
+    socket.connect();
+    
+    socket.on('message', message => {
+      console.log(message);
+    });
+    
+    socket.on('chatMessage', message =>{
+      outputMessage(message);
+    });
+    
+    return () => {
+      socket.off('message');
+      socket.off('chatMessage');
+    };
+  }, []);
+  
+  const outputMessage = (message) => {
+    setMessages(
+      prev => [...prev, message]
+    );
+  }
 
   useEffect(() => {
     const loadMessages = async () => {
@@ -75,29 +101,14 @@ export default function Messenger() {
     };
 
     if (activeConvo) {
+      if (previousConvo.current) {
+          socket.emit('leaveRoom', previousConvo.current);
+      }
+      socket.emit('joinRoom', activeConvo);
+      previousConvo.current = activeConvo;
       loadMessages();
     }
   }, [activeConvo]);
-
-  useEffect(() => {
-    const outputMessage = (message) => {
-      setMessages(
-        prev => [...prev, message]
-      );
-    }
-
-    socket.connect();
-
-    socket.on('message', message => {
-      console.log(message);
-      outputMessage(message);
-    });
-
-    return () => {
-      socket.off("receive_message");
-      socket.disconnect();
-    };
-  }, []);
   
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -108,6 +119,7 @@ export default function Messenger() {
     const newMsg = formatMessage(activeConvo, activeUser.id, input.trim());
 
     // Emit a message to the server
+    outputMessage(newMsg);
     socket.emit('chatMessage', newMsg);
     setInput("");
   };
@@ -130,6 +142,22 @@ export default function Messenger() {
     setActiveConvo(convo._id);
   }
 
+  const handleStartConvo = async (user) => {
+        try {
+            const res = await fetch(`${apiUrl}/messages/conversations/dm`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ userId_a: activeUser.id, userId_b: user._id })
+            });
+            const convo = await res.json();
+            setSearch('');
+            setSearchResults([]);
+            setActiveConvo(convo._id);
+        } catch (error) {
+            console.error('Failed to start conversation:', error);
+        }
+    };
+
   const handleLogout = () => {
     sessionStorage.removeItem('token');
     sessionStorage.removeItem('user');
@@ -137,7 +165,7 @@ export default function Messenger() {
     navigate('/login');
   }
 
-  const active = CONVERSATIONS.find(c => c._id === activeConvo) || CONVERSATIONS[0];
+  const active = conversations.find(c => c._id === activeConvo);
 
   // Group consecutive messages from same sender
   const grouped = messages.map((msg, i) => {
@@ -157,6 +185,7 @@ export default function Messenger() {
     };
   });
 
+  if (loading) return <div className="app"><div className="loading">Loading...</div></div>;
   return (
     <>
       <div className="app">
@@ -183,12 +212,7 @@ export default function Messenger() {
                 )}
               </div>
             </div>
-            <div className="search-bar">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8" /><path d="m21 21-4.35-4.35" />
-              </svg>
-              <input placeholder="Search conversations..." value={search} onChange={e => setSearch(e.target.value)} />
-            </div>
+            <SearchBar onSelectUser={handleStartConvo}/>
           </div>
 
           <div className="convo-list">
@@ -337,3 +361,5 @@ export default function Messenger() {
     </>
   );
 }
+
+export { Messenger, AvatarEl }

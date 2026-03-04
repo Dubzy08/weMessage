@@ -41,10 +41,20 @@ io.on('connection', socket => {
 
     })
 
+    socket.on('joinRoom', (conversationId) => {
+        socket.join(conversationId);
+        console.log(`User joined room: ${conversationId}`)
+    })
+
+    socket.on('leaveRoom', (conversationId) => {
+        socket.leave(conversationId);
+        console.log(`User left room: ${conversationId}`);
+    })
+
     // Listen for chat message
     socket.on('chatMessage', async (message) => {
-        await createMessage(message.conversationId, message.from, message.text)
-        io.emit('message', message);
+        await createMessage(message.conversationId, message.from, message.text);
+        socket.to(message.conversationId).emit('chatMessage', message);
     })
 });
 
