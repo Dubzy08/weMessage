@@ -35,6 +35,7 @@ export default function Messenger() {
   const messagesEndRef = useRef(null);
   const typingTimeout = useRef(null);
 
+  const apiUrl = import.meta.env.VITE_WEMESSAGE_API_URL;
   const navigate = useNavigate();
   const token = sessionStorage.getItem('token');
   const activeUser = JSON.parse(sessionStorage.getItem('user'));
@@ -47,7 +48,7 @@ export default function Messenger() {
   useEffect(() => {
     const loadConversations = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/messages/conversations/${activeUser.id}`)
+        const res = await fetch(`${apiUrl}/messages/conversations/${activeUser.id}`)
         const dbConvos = await res.json();
         const merged = [...dbConvos, ...CONVERSATIONS];
         setConversations(merged);
@@ -65,7 +66,7 @@ export default function Messenger() {
   useEffect(() => {
     const loadMessages = async () => {
       try {
-        const res = await fetch(`http://localhost:3000/messages/messages/${activeConvo}`);
+        const res = await fetch(`${apiUrl}/messages/messages/${activeConvo}`);
         const data = await res.json();
         setMessages(data);
       } catch (error) {
@@ -118,7 +119,7 @@ export default function Messenger() {
   }
 
   const calculateUnreadTime = (convo) => {
-
+    // Implement time between message sent and current time
   }
 
   const handleKey = (e) => {

@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import './Signup.css'
 
 function Login() {
-
+    const apiUrl = import.meta.env.VITE_WEMESSAGE_API_URL;
     const navigate = useNavigate();
     const [formData, setFormData] = useState({
         email: '',
@@ -22,20 +22,26 @@ function Login() {
     const handleSubmit = async (e) =>{
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:3000/auth/login', {
+            const response = await fetch(`${apiUrl}/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-type': 'application/json'
                 },
                 body: JSON.stringify(formData)
             });
+
+            if(!response.ok) {
+                console.log('Login failed:', response.status);
+                return;
+            }
+
             const result = await response.json();
             const user = result.user;
             sessionStorage.setItem('token', result.token);
             console.log(result);
             sessionStorage.setItem('user', JSON.stringify({
                 id: user._id,
-                user: user.name
+                name: user.name
             }));
             navigate('/messenger');
         } catch (error) {

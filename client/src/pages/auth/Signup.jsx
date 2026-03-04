@@ -4,7 +4,7 @@ import './Signup.css'
 import { useNavigate } from 'react-router-dom';
 
 function Signup() {
-
+    const apiUrl = import.meta.env.VITE_WEMESSAGE_API_URL;
     const navigate = useNavigate();
     const[formData, setFormData] = useState({
         email:'',
@@ -23,7 +23,7 @@ function Signup() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const response = await fetch('http://localhost:3000/user/register', {
+            const response = await fetch(`${apiUrl}/user/register`, {
                 method: 'POST',
                 headers:{
                     'Content-Type': 'application/json'

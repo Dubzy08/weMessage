@@ -2,7 +2,6 @@ import { Route, Routes } from "react-router-dom";
 import Header from "./pages/header/Header.jsx";
 import Login from "./pages/auth/Login.jsx";
 import Signup from "./pages/auth/Signup.jsx";
-import Dashboard from "./pages/dashboard/Dashboard.jsx";
 import Messenger from "./pages/dashboard/Messenger.jsx";
 
 function App() {
@@ -13,7 +12,6 @@ function App() {
                 <Route path='/'></Route>
                 <Route path='/login' element={<Login></Login>}></Route>
                 <Route path='/register' element={<Signup></Signup>}></Route>
-                <Route path='/dashboard' element={<Dashboard></Dashboard>}></Route>
                 <Route path='/messenger' element={<Messenger></Messenger>}></Route>
             </Routes>
         </>
